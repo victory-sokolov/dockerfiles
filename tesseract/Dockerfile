@@ -1,15 +1,13 @@
 FROM ubuntu:19.10
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV TESSERACT=/usr/share/tesseract
-
-WORKDIR tesseract
+ENV TESSERACT=/usr/share/tesseract-ocr
+ENV TESSDATA_PREFIX=/usr/share/tesseract/tessdata
 
 RUN apt-get update && apt-get install -y \
     build-essential \
     software-properties-common \
     python3.7 \
-    python3-pip \
     cmake \
     autoconf \
     automake \
@@ -30,18 +28,18 @@ RUN apt-get update && apt-get install -y \
     vim \
     tesseract-ocr-eng
 
-RUN git clone https://github.com/tesseract-ocr/tesseract $TESSERACT
+WORKDIR $TESSERACT
 
+RUN git clone https://github.com/tesseract-ocr/tesseract
+RUN git clone https://github.com/tesseract-ocr/langdata_lstm
+
+WORKDIR $TESSERACT/tesseract
 
 # Compile Tesseract
-RUN
-    ./autogen.sh
-    ./configure
-    make
-    make install
-    ldconfig
-    make training
+RUN ./autogen.sh \
+    ./configure \
+    make \
+    make install \
+    ldconfig \
+    make training \
     make training-install
-
-
-ENV TESSDATA_PREFIX=/usr/share/tesseract/tessdata

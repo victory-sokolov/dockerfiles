@@ -1,4 +1,12 @@
-FROM python:3.7.7-slim
+FROM python:3.8.3-slim-buster
+
+WORKDIR /app
+
+USER "viktor"
+
+# create new user
+RUN useradd -m -r $USER && \
+    chown $USER /app
 
 ENV LC_ALL=C \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -26,7 +34,10 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     tesseract-ocr \
     tesseract-ocr-eng \
 
-WORKDIR $PYSETUP_PATH
-
 # install Poetry
 RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
+
+COPY pyproject.toml ./
+
+# install poetry dependencies
+RUN poetry install

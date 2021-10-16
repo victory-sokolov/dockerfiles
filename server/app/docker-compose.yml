@@ -1,0 +1,44 @@
+version: '3.7'
+services:
+  db:
+    image: mongo 
+    container_name: mongodb # default name: myapp_db_1
+    restart: always # restart the container if crashes
+    volumes:
+      # will mount the db-data dir inside the cwd as volume
+      - ./db-data:/data/db
+
+  server:
+    # build an image using the files and the Dockerfile in ./server
+    build: ./server
+    image: myapp/server
+    container_name: server
+    restart: always
+    depends_on: # starts after the db
+      - mongo
+    networks: # attach the container to the traefik network,
+      - traefik # so that traefik can route traffic to it
+      - default # attach it also to the default network to see db
+    labels:
+      # define the domain associated to this service
+      # DNS must point to your server
+      - traefik.frontend.rule=Host:api.myapp.com
+
+  frontend:
+    image: nginx
+    container_name: frontend
+    restart: always
+    volumes:
+      # mount the html as read-only (least privilege principle)
+      - ./frontend:/usr/share/nginx/html:ro
+    networks:
+      # we don't need the default network, frontend its stand-alone
+      - traefik
+    labels:
+      # assign two domains to this service, the first is the primary
+      - traefik.frontend.rule=Host:myapp.com,en.myapp.com
+
+networks: # link the traefik network created in the traefik's docker-compose
+  traefik:
+    external:
+      name: traefik

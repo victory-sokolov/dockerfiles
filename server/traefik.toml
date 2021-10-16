@@ -1,0 +1,35 @@
+defaultEntryPoints = ["https","http"]
+
+[entryPoints]
+  [entryPoints.http]
+  address = ":80"
+    [entryPoints.http.redirect]
+    entryPoint = "https"
+  [entryPoints.https]
+  address = ":443"
+    [entryPoints.https.tls]
+
+[retry]
+
+[docker]
+endpoint = "unix:///var/run/docker.sock"
+watch = true
+network = "traefik"
+
+# prevent exposing each container by default
+# you'll need to add the `traefik.enable=true` label to containers
+#exposedByDefault = false
+
+# will expose all your containers on <container-name>.<your.domain>
+# override adding to containers the label
+# `trafik.frontend.rule=Host:<your.other.domain>`
+#domain=<your.domain>
+
+[acme]
+email = "<your-email>"
+storage = "/etc/traefik/acme/acme.json"
+entryPoint = "https"
+onHostRule = true
+[acme.tlsChallenge]
+[acme.httpChallenge]
+  entryPoint = "http"

@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+    links:
+      - rabbit
+    depends_on:
+      - rabbit
+  rabbit:
+    hostname: rabbit
+    image: rabbitmq:latest
+    environment:
+      - RABBITMQ_DEFAULT_USER=myuser
+      - RABBITMQ_DEFAULT_PASS=mypassword
+    ports:
+      - "5672:5672"
+  rproxy:
+    hostname: rproxy
+    image: anuragrana/rotating-proxy
+    environment:
+      - tors=25
+    ports:
+      - "5566:5566"
+      - "4444:4444"

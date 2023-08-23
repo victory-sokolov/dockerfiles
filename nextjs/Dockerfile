@@ -1,7 +1,7 @@
 # We're starting with the same base image, but we're declaring
 # that this block outputs an image called DEPS that we
 # won't be deploying - it just installs our Yarn deps
-FROM node:16-alpine3.16 AS deps
+FROM node:20.5-alpine3.18 AS deps
 
 # If you need libc for any of your deps, uncomment this line:
 # RUN apk add --no-cache libc6-compat
@@ -13,7 +13,7 @@ RUN yarn install --frozwn-lockfile
 # END DEPS IMAGE
 
 # Now we make a container to handle our Build
-FROM node:16-alpine3.16 AS BUILD_IMAGE
+FROM node:20.5-alpine3.18  AS BUILD_IMAGE
 
 # Set up our work directory again
 WORKDIR /app
@@ -30,7 +30,7 @@ RUN yarn install --production --frozen-lockfile --ignore-scripts --prefer-offlin
 # END OF BUILD_IMAGE
 
 # This starts our application's run image - the final output of build.
-FROM node:16-alpine3.16
+FROM node:20.5-alpine3.18
 
 ENV NODE_ENV production
 
@@ -47,8 +47,7 @@ COPY --from=BUILD_IMAGE --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=BUILD_IMAGE --chown=nextjs:nodejs /app/public ./public
 COPY --from=BUILD_IMAGE --chown=nextjs:nodejs /app/.next ./.next
 
-# 4. OPTIONALLY the next.config.js, if your app has one
-# COPY --from=BUILD_IMAGE --chown=nextjs:nodejs /app/next.config.js  ./
+COPY --from=BUILD_IMAGE --chown=nextjs:nodejs /app/next.config.js  ./
 
 USER nextjs3
 

@@ -3,7 +3,9 @@ services:
   postgres:
     container_name: postgresql-database
     image: postgres:15
-    restart: always
+    restart: on-failure
+    security_opt:
+      - no-new-privileges:true
     environment:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}

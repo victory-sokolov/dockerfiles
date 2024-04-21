@@ -32,10 +32,10 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     git \
     curl \
     tesseract-ocr \
-    tesseract-ocr-eng \
+    tesseract-ocr-eng
 
-# install Poetry
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
+# Install Poetry
+RUN curl -sSL https://install.python-poetry.org | python3 -
 
 COPY pyproject.toml ./
 

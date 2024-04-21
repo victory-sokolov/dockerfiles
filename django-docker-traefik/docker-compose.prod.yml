@@ -30,24 +30,24 @@ services:
       - POSTGRES_PASSWORD=django_traefik
       - POSTGRES_DB=django_traefik
 
-    traefik:
-      build:
-        context: .
-        dockerfile: Dockerfile.traefik
-      ports:
-        - 80:80
-        - 443:443
-      volumes:
-        - "/var/run/docker.sock:/var/run/docker.sock:ro"
-        - "./traefik-public-certificates:/certificates"
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.dashboard.rule=Host(`dashboard-django-traefik.your-domain.com`)"
-        - "traefik.http.routers.dashboard.tls=true"
-        - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
-        - "traefik.http.routers.dashboard.service=api@internal"
-        - "traefik.http.routers.dashboard.middlewares=auth"
-        - "traefik.http.middlewares.auth.basicauth.users=testuser:$$apr1$$jIKW.bdS$$eKXe4Lxjgy/rH65wP1iQe1"
+  traefik:
+    build:
+      context: .
+      dockerfile: Dockerfile.traefik
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./traefik-public-certificates:/certificates"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`dashboard-django-traefik.your-domain.com`)"
+      - "traefik.http.routers.dashboard.tls=true"
+      - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.users=testuser:$$apr1$$jIKW.bdS$$eKXe4Lxjgy/rH65wP1iQe1"
 
 volumes:
   postgres_data_prod:

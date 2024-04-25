@@ -2,7 +2,7 @@ version: '3.8'
 services:
   postgres:
     container_name: postgresql-database
-    image: postgres:15
+    image: postgres:16
     restart: on-failure
     security_opt:
       - no-new-privileges:true
@@ -16,6 +16,11 @@ services:
       - "5432:5432"
     volumes:
       - ./docker-data/db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   pgadmin-compose:
     image: dpage/pgadmin4

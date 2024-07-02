@@ -1,0 +1,8 @@
+services:
+
+  cv:
+    container_name: my-cv-app
+    build:
+      context: ./
+    ports:
+      - "8085:8085"

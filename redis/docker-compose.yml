@@ -7,6 +7,8 @@ services:
     ports:
       - 6379:6379
     command: redis-server --bind --loglevel warning
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
     volumes:
       - cache:/data
       - ./redis.conf:/usr/local/etc/redis/redis.conf

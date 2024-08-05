@@ -8,16 +8,18 @@ USER "viktor"
 RUN useradd -m -r $USER && \
     chown $USER /app
 
-ENV LC_ALL=C \
+ENV DEBIAN_FRONTEND=noninteractive \
+    LC_ALL=C \
     PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONIOENCODING=UTF-8 \
     PIP_NO_CACHE_DIR=off \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
     PIP_DEFAULT_TIMEOUT=100 \
     POETRY_HOME="/home/poetry" \
     POETRY_VIRTUALENVS_CREATE=false \
     POETRY_NO_INTERACTION=1 \
-    POETRY_VERSION=1.0.10 \
-    PYSETUP_PATH="/home/pysetup"
+    POETRY_VERSION=1.8.3
 
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
@@ -32,12 +34,15 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     git \
     curl \
     tesseract-ocr \
-    tesseract-ocr-eng
+    tesseract-ocr-eng \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Poetry
 RUN curl -sSL https://install.python-poetry.org | python3 -
 
-COPY pyproject.toml ./
+COPY pyproject.toml poetry.lock ./
 
 # install poetry dependencies
-RUN poetry install
+ARG INSTALL_DEV="false"
+COPY pyproject.toml poetry.lock ./
+RUN bash -c "if ["$INSTALL_DEV" == 'true']; then poetry install --no-root ; else poetry install --no-root --only main --no-directory; fi"

@@ -41,6 +41,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 
 # Install Poetry
 RUN curl -sSL https://install.python-poetry.org | python3 -
+RUN python3 -m venv $VIRTUAL_ENV
 
 COPY pyproject.toml poetry.lock ./
 

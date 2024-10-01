@@ -19,7 +19,9 @@ ENV DEBIAN_FRONTEND=noninteractive \
     POETRY_HOME="/home/poetry" \
     POETRY_VIRTUALENVS_CREATE=false \
     POETRY_NO_INTERACTION=1 \
-    POETRY_VERSION=1.8.3
+    POETRY_VERSION=1.8.3 \
+    VIRTUAL_ENV=/opt/venv \
+    PATH="$VIRTUAL_ENV/bin:$PATH"
 
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
@@ -45,4 +47,11 @@ COPY pyproject.toml poetry.lock ./
 # install poetry dependencies
 ARG INSTALL_DEV="false"
 COPY pyproject.toml poetry.lock ./
-RUN bash -c "if ["$INSTALL_DEV" == 'true']; then poetry install --no-root ; else poetry install --no-root --only main --no-directory; fi"
+
+RUN if [ "$DEV_DEPS" = "true" ]; then \
+    echo "Installing all dependencies including dev"; \
+    poetry install --no-root; \
+    else \
+    echo "Installing production dependencies"; \
+    poetry install --no-root --only main; \
+    fi

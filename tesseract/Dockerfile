@@ -1,4 +1,4 @@
-FROM ubuntu:19.10
+FROM ubuntu:24.10
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TESSERACT=/usr/share/tesseract-ocr
@@ -7,7 +7,7 @@ ENV TESSDATA_PREFIX=/usr/share/tesseract/tessdata
 RUN apt-get update && apt-get install -y \
     build-essential \
     software-properties-common \
-    python3.7 \
+    python3.12 \
     cmake \
     autoconf \
     automake \

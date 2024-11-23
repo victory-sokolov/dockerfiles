@@ -3,7 +3,6 @@ services:
   nginx:
     image: jonasal/nginx-certbot:latest
     restart: unless-stopped
-    container_name: nginx
     environment:
       - CERTBOT_EMAIL
     env_file:

@@ -19,7 +19,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     POETRY_HOME="/home/poetry" \
     POETRY_VIRTUALENVS_CREATE=false \
     POETRY_NO_INTERACTION=1 \
-    POETRY_VERSION=1.8.3 \
+    POETRY_VERSION=2.1.2 \
     VIRTUAL_ENV=/opt/venv \
     PATH="$VIRTUAL_ENV/bin:$PATH"
 

@@ -1,0 +1,26 @@
+services:
+
+  couchdb:
+    restart: unless-stopped
+    env_file: 
+      - .env.local
+    environment:
+      - NODENAME=couchdb.readitlater
+    build:
+      context: ./docker/couchdb
+      dockerfile: Dockerfile
+    ports:
+      - 5984:5984
+    volumes:
+      - data-couch-0:/opt/couchdb/data
+      - cfg-couch-0:/opt/couchdb/etc/local.d
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5984/_up"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  data-couch-0:
+  cfg-couch-0:

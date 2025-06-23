@@ -1,26 +1,43 @@
 services:
 
   postgres:
-    container_name: postgresql-database
-    image: postgres:16
+    build:
+      context: .
     restart: on-failure
     security_opt:
       - no-new-privileges:true
-    environment:
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
     env_file:
       - .env
     ports:
-      - "5432:5432"
+      - 5432:5432
     volumes:
-      - ./docker-data/db:/var/lib/postgresql/data
+      - postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready"]
+      test: ["CMD-SHELL", "pg_isready -p ${PGPORT} -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  pgbouncer:
+    build:
+      context: ./pgbouncer
+    networks:
+      - default
+    env_file:
+      - .env
+    ports:
+      - 6432:6432
+    environment:
+      <<: *default-env
+    healthcheck:
+      test: ["CMD-SHELL", 'PGPASSWORD=${POSTGRES_PASSWORD} psql -h 127.0.0.1 -p 6432 -U pgbouncer -d ${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   pgadmin-compose:
     image: dpage/pgadmin4
@@ -33,3 +50,7 @@ services:
       - "16543:80"
     depends_on:
       - postgres
+
+
+volumes:
+  postgres:

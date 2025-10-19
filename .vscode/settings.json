@@ -1,0 +1,11 @@
+{
+    // Requeires the File Watcher extension: https://marketplace.visualstudio.com/items?itemName=emeraldwalk.FileWatchers
+    "filewatcher.commands": [
+        {
+            "match": "\\.*",
+            "event": "onFolderCreate",
+            "isAsync": true,
+            "cmd": "touch \"${file}/README.MD\" \"${file}/compose.yml\";",
+        }
+    ]
+}

@@ -1,0 +1,35 @@
+services:
+  valkey:
+    image: valkey/valkey:7.2-alpine
+    container_name: valkey-server
+    hostname: valkey
+    restart: unless-stopped
+    ports:
+      - 6379:6379
+    volumes:
+      - ./valkey-data:/data
+      - ./valkey.conf:/etc/valkey/valkey.conf
+    command: ["valkey-server", "/etc/valkey/valkey.conf"]
+    networks:
+      - valkey-network
+
+  valkey-insight:
+    image: joeferner/redis-commander:latest
+    container_name: valkey-insight
+    restart: unless-stopped
+    ports:
+      - 8081:8081
+    environment:
+      - REDIS_HOSTS=local:valkey:6379
+    depends_on:
+      - valkey
+    networks:
+      - valkey-network
+
+networks:
+  valkey-network:
+    driver: bridge
+
+volumes:
+  valkey-data:
+    driver: local

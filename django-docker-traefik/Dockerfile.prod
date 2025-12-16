@@ -1,4 +1,4 @@
-FROM python:3.9.5-slim as builder
+FROM python:3.14.2-slim as builder
 
 WORKDIR /app
 
@@ -21,7 +21,7 @@ COPY requirements.txt .
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
 
 # pull official base image
-FROM python:3.9.5-slim
+FROM python:3.14.2-slim
 
 # create directory for the app user
 RUN mkdir -p /home/app

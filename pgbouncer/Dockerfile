@@ -1,4 +1,4 @@
-FROM debian:bullseye-slim
+FROM debian:12-slim
 
 
 ENV PGBOUNCER_VERSION=1.24.1

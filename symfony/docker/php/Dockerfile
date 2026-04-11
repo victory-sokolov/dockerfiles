@@ -1,4 +1,4 @@
-FROM php:8.5.3RC1-fpm
+FROM php:8.5-fpm
 
 ARG TIMEZONE
 

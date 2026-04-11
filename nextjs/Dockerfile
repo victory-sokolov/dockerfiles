@@ -10,7 +10,7 @@ RUN \
   if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
   elif [ -f package-lock.json ]; then npm ci; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i; \
-  elif [ -f bun.lockb ]; then curl -fsSL https://bun.sh/install | bash && bun install; \
+  elif [ -f bun.lockb ]; then curl -fsSL https://bun.sh/install | bash && export BUN_INSTALL="$HOME/.bun" && bun install; \
   else echo "Lockfile not found." && exit 1; \
   fi
 

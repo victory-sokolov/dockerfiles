@@ -31,8 +31,6 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     tesseract-ocr-eng \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN pip install uv
-
 COPY requirements.txt ./
 
 RUN pip install uv && uv venv .venv && \

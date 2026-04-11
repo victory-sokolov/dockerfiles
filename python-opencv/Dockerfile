@@ -21,9 +21,10 @@ RUN apt-get clean \
 
 COPY . .
 
-RUN pip install uv && uv venv .venv && \
+RUN uv venv .venv && \
     . .venv/bin/activate && \
     uv pip install -r requirements.txt
+ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8085
 

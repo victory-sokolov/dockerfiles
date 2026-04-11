@@ -7,7 +7,7 @@ ENV PYTHONUNBUFFERED 1
 
 # install dependencies
 COPY requirements.txt .
-RUN pip install uv && uv venv .venv && \
+RUN uv venv .venv && \
     . .venv/bin/activate && \
     uv pip install -r requirements.txt
 

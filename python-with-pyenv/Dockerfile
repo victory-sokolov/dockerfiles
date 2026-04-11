@@ -14,7 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xz-utils \
     tk-dev \
     libffi-dev \
-    liblzma-dev
+    liblzma-dev \
+    git
 
 RUN git clone https://github.com/pyenv/pyenv.git .pyenv
 

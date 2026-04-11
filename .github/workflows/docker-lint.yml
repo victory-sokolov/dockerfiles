@@ -2,8 +2,7 @@ name: Docker Lint
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main, master]
+  pull_request:
     paths:
       - 'Dockerfile'
       - '**/Dockerfile*'
@@ -17,23 +16,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@master
+        uses: actions/checkout@v4
 
       - name: Lint Dockerfile using Checkov
         id: checkov
-        uses: bridgecrewio/checkov-action@master
+        uses: bridgecrewio/checkov-action@v0.12.0
         with:
           directory: .
-          framework: dockerfile # Only ask for Dockerfile scans
-          quiet: true # Show only failed checks
+          framework: dockerfile
+          quiet: true
           container_user: 1000
-          # Skip adding User, healthcheck
           skip_check: CKV_DOCKER_2,CKV_DOCKER_3
 
       - name: Build an image from Dockerfile
         run: docker build -t docker.io/victorysokolov/django-blog:${{ github.sha }} .
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.29.0
         with:
           image-ref: 'docker.io/victorysokolov/django-blog:${{ github.sha }}'
           format: 'table'

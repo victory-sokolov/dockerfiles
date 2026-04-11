@@ -28,8 +28,6 @@ jobs:
           container_user: 1000
           skip_check: CKV_DOCKER_2,CKV_DOCKER_3
 
-      - name: Build an image from Dockerfile
-        run: docker build -t docker.io/victorysokolov/django-blog:${{ github.sha }} .
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@v0.35.0
         with:

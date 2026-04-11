@@ -1,6 +1,4 @@
-ARG DEFAULT_PYTHON_VERSION=3.10.14
-
-FROM python:${PYTHON_VERSION:-${DEFAULT_PYTHON_VERSION}}-bookworm AS base
+FROM python:3.14-bookworm AS base
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -23,7 +21,10 @@ RUN apt-get clean \
 
 COPY . .
 
-RUN pip install -r requirements.txt
+RUN uv venv .venv && \
+    . .venv/bin/activate && \
+    uv pip install -r requirements.txt
+ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8085
 

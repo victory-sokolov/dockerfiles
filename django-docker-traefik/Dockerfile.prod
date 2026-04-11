@@ -1,51 +1,43 @@
-FROM python:3.14.2-slim as builder
+FROM python:3.14-slim as builder
 
 WORKDIR /app
 
-# set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# install system dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc
+    apt-get install -y --no-install-recommends gcc curl
 
-# lint
 RUN pip install --upgrade pip
-RUN pip install flake8==3.9.1
+RUN pip install uv flake8==3.9.1
 COPY . .
 RUN flake8 --ignore=E501,F401 .
 
-# install python dependencies
 COPY requirements.txt .
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
+RUN uv venv .venv && \
+    . .venv/bin/activate && \
+    uv pip install -r requirements.txt && \
+    uv pip wheel --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
 
-# pull official base image
-FROM python:3.14.2-slim
+FROM python:3.14-slim
 
-# create directory for the app user
 RUN mkdir -p /home/app
-
-# create the app user
 RUN addgroup --system app && adduser --system --group app
 
-# create the appropriate directories
 ENV HOME=/home/app
 ENV APP_HOME=/home/app/web
 RUN mkdir $APP_HOME
 WORKDIR $APP_HOME
 
-# install dependencies
 COPY --from=builder /usr/src/app/wheels /wheels
 COPY --from=builder /app/requirements.txt .
-RUN pip install --upgrade pip
-RUN pip install --no-cache /wheels/*
+RUN uv venv .venv && \
+    . .venv/bin/activate && \
+    uv pip install --no-cache /wheels/*
+ENV PATH="/home/app/web/.venv/bin:$PATH"
 
-# copy project
 COPY . $APP_HOME
 
-# chown all the files to the app user
 RUN chown -R app:app $APP_HOME
 
-# change to the app user
 USER app

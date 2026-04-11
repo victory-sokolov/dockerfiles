@@ -16,11 +16,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Lint Dockerfile using Checkov
         id: checkov
-        uses: bridgecrewio/checkov-action@v0.12.0
+        uses: bridgecrewio/checkov-action@v12.1347.0
         with:
           directory: .
           framework: dockerfile
@@ -31,7 +31,7 @@ jobs:
       - name: Build an image from Dockerfile
         run: docker build -t docker.io/victorysokolov/django-blog:${{ github.sha }} .
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: 'docker.io/victorysokolov/django-blog:${{ github.sha }}'
           format: 'table'

@@ -1,0 +1,212 @@
+services:
+  # ────────────────────────────────────────────────────────────────────────────
+  # Caddy — reverse proxy + automatic HTTPS via Let's Encrypt
+  # ────────────────────────────────────────────────────────────────────────────
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data # TLS certificates — must persist across restarts
+      - caddy_config:/config
+    environment:
+      - DOMAIN=${DOMAIN}
+    networks:
+      - public
+    depends_on:
+      fastify:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:2019/config/']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging: &default-logging
+      driver: 'json-file'
+      options:
+        max-size: '20m'
+        max-file: '3'
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Fastify — application server (never exposed directly, only via Caddy)
+  # ────────────────────────────────────────────────────────────────────────────
+  fastify:
+    image: ""
+    container_name: fastify
+    restart: unless-stopped
+    expose:
+      - '3000' # Internal only — NOT published to host
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+    networks:
+      - public
+      - internal
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    # Resource limits — tune to your Hetzner plan
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    logging: *default-logging
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # PgBouncer — connection pooler (sits between Fastify and Postgres)
+  # ────────────────────────────────────────────────────────────────────────────
+  pgbouncer:
+    image: ghcr.io/cloudnative-pg/pgbouncer:1.25.1
+    container_name: pgbouncer
+    restart: unless-stopped
+    expose:
+      - '${PGBOUNCER_PORT}'
+    volumes:
+      - ./config/pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./config/pgbouncer/entrypoint.sh:/etc/pgbouncer/entrypoint.sh:ro
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGBOUNCER_PORT: ${PGBOUNCER_PORT}
+    entrypoint: ['/bin/sh', '/etc/pgbouncer/entrypoint.sh']
+    networks:
+      - internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'PGPASSWORD=$$POSTGRES_PASSWORD pg_isready -h 127.0.0.1 -p $$PGBOUNCER_PORT -U $$POSTGRES_USER -d $$POSTGRES_DB',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    logging: *default-logging
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # PostgreSQL — database (internal network only, never exposed)
+  # ────────────────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:18-alpine
+    container_name: postgres
+    restart: unless-stopped
+    expose:
+      - '5432'
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./config/postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./config/postgres/pghba.conf:/etc/postgresql/pg_hba.conf:ro
+    command: >
+      postgres
+        -c config_file=/etc/postgresql/postgresql.conf
+        -c hba_file=/etc/postgresql/pg_hba.conf
+    networks:
+      - internal
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'PGPASSWORD=$$POSTGRES_PASSWORD pg_isready -h 127.0.0.1 -U $$POSTGRES_USER -d $$POSTGRES_DB',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+    # Prevent Postgres from being OOM-killed before other services
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          memory: 512M
+    logging: *default-logging
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Backup — daily pg_dump → gzip → Cloudflare R2 via aws-cli (S3-compatible)
+  # ────────────────────────────────────────────────────────────────────────────
+  backup:
+    build:
+      context: .
+      dockerfile: config/backup/Dockerfile
+    container_name: backup
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      # Cloudflare R2 credentials
+      AWS_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      R2_BUCKET: ${R2_BUCKET}
+      R2_ENDPOINT: ${R2_ENDPOINT} # https://<account-id>.r2.cloudflarestorage.com
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+    entrypoint: ['/bin/sh', '-c']
+    # Run once on start, then via cron at 02:00 UTC daily
+    command: >
+      echo '0 2 * * * /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1' | crontab - &&
+      /usr/local/bin/backup.sh &&
+      crond -f -l 2
+    networks:
+      - internal
+      - public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging: *default-logging
+
+# ==============================================================================
+# Networks
+# ==============================================================================
+networks:
+  public:
+    driver: bridge # Caddy ↔ Fastify
+  internal:
+    driver: bridge
+    internal: true # No outbound internet — Fastify ↔ PgBouncer ↔ Postgres ↔ Backup
+
+# ==============================================================================
+# Volumes
+# ==============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local

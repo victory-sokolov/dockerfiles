@@ -1,0 +1,80 @@
+# ==============================================================================
+# Caddyfile — Production reverse proxy
+# Caddy automatically obtains and renews TLS certificates via Let's Encrypt.
+# Replace {$DOMAIN} with your actual domain in .env (e.g. api.example.com)
+# ==============================================================================
+
+{$DOMAIN} {
+
+  # ── Reverse proxy to Fastify ───────────────────────────────────────────────
+  reverse_proxy fastify:3000 {
+    # Pass real client IP to Fastify
+    header_up X-Real-IP {remote_host}
+
+    # Health check Caddy uses to detect if Fastify is up
+    health_uri    /health
+    health_interval 15s
+    health_timeout  5s
+
+    # Timeouts
+    transport http {
+      dial_timeout       5s
+      response_header_timeout 30s
+    }
+  }
+
+  # ── Security headers ───────────────────────────────────────────────────────
+  header {
+    # Remove server fingerprinting
+    -Server
+    -X-Powered-By
+
+    # HSTS — tell browsers to always use HTTPS (1 year)
+    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+    # Prevent MIME sniffing
+    X-Content-Type-Options "nosniff"
+
+    # Clickjacking protection
+    X-Frame-Options "DENY"
+
+    # XSS protection (legacy browsers)
+    X-XSS-Protection "1; mode=block"
+
+    # Referrer policy
+    Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Permissions policy — disable unused browser features
+    Permissions-Policy "geolocation=(), microphone=(), camera=()"
+
+    defer # Apply after reverse proxy sets its headers
+  }
+
+  # ── Internal health check endpoint for Caddy itself ───────────────────────
+  handle /healthz {
+    respond "ok" 200
+  }
+
+  # ── Logging ───────────────────────────────────────────────────────────────
+  log {
+    output file /data/logs/access.log {
+      roll_size    10MiB
+      roll_keep    5
+      roll_keep_for 720h  # 30 days
+    }
+    format json
+  }
+
+  # ── TLS: auto-managed by Caddy via Let's Encrypt ──────────────────────────
+  tls {
+    protocols tls1.2 tls1.3
+  }
+}
+
+# Redirect bare HTTP to HTTPS (Caddy does this automatically, but explicit is clearer)
+http://{$DOMAIN} {
+  handle /healthz {
+    respond "ok" 200
+  }
+  redir https://{$DOMAIN}{uri} permanent
+}

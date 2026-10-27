@@ -1,0 +1,17 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [ "config:recommended" ],
+    "schedule": [ "at any time" ],
+    "packageRules": [
+        {
+            "matchUpdateTypes": [ "minor", "patch" ],
+            "automerge": true,
+            "automergeType": "branch"
+        },
+        {
+            "matchDatasources": [ "npm", "docker", "pypi" ],
+            "matchCurrentVersion": "!/^0/",
+            "groupName": "all security and non-major updates"
+        }
+    ]
+}
